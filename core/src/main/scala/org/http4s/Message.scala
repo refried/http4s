@@ -21,34 +21,10 @@ sealed trait Message extends MessageOps {
   def body: EntityBody
   
   def attributes: AttributeMap
-  
+
   protected def change(body: EntityBody = body,
                        headers: Headers = headers,
                        attributes: AttributeMap = attributes): Self
-
-  /** Generates a new message object with the specified key/value pair appended to the [[org.http4s.AttributeMap]]
-    *
-    * @param key [[AttributeKey]] with which to associate the value
-    * @param value value associated with the key
-    * @tparam A type of the value to store
-    * @return a new message object with the key/value pair appended
-    */
-  override def withAttribute[A](key: AttributeKey[A], value: A): Self =
-    change(attributes = attributes.put(key, value))
-
-  /** Replaces the [[Header]]s of the incoming Request object
-    *
-    * @param headers [[Headers]] containing the desired headers
-    * @return a new Request object
-    */
-  override def withHeaders(headers: Headers): Self = change(headers = headers)
-
-  /** Add the provided headers to the existing headers, replacing those of the same header name */
-  override def putHeaders(headers: Header*): Self =
-    change(headers = this.headers.put(headers:_*))
-
-  override def filterHeaders(f: (Header) => Boolean): Self =
-    change(headers = headers.filter(f))
 
   /** Replace the body of this message with a new body
     *
@@ -112,6 +88,9 @@ case class Request(
 
   type Self = Request
 
+  override def mapHeaders(f: (Headers) => Headers): Self = copy(headers = f(headers))
+
+  override def mapAttributes(f: (AttributeMap) => AttributeMap): Self = copy(attributes = f(attributes))
 
   override protected def change(body: EntityBody, headers: Headers, attributes: AttributeMap): Self =
     copy(body = body, headers = headers, attributes = attributes)
@@ -205,6 +184,10 @@ case class Response(
   body: EntityBody = EmptyBody,
   attributes: AttributeMap = AttributeMap.empty) extends Message with ResponseOps {
   type Self = Response
+
+  override def mapHeaders(f: (Headers) => Headers): Self = copy(headers = f(headers))
+
+  override def mapAttributes(f: (AttributeMap) => AttributeMap): Self = copy(attributes = f(attributes))
 
   /** Response specific extension methods */
   override def withStatus[S <% Status](status: S): Self = copy(status = status)

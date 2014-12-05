@@ -20,26 +20,9 @@ trait TaskMessageOps[M <: Message] extends Any with MessageOps {
     */
   def withBody[T](b: T)(implicit w: Writable[T]): Self = self.flatMap(_.withBody(b)(w))
 
-  /** Generates a new message object with the specified key/value pair appended to the [[org.http4s.AttributeMap]]
-    *
-    * @param key [[AttributeKey]] with which to associate the value
-    * @param value value associated with the key
-    * @tparam A type of the value to store
-    * @return a new message object with the key/value pair appended
-    */
-  override def withAttribute[A](key: AttributeKey[A], value: A): Self = self.map(_.withAttribute(key, value))
+  override def mapHeaders(f: (Headers) => Headers): Self = self.map(_.mapHeaders(f))
 
-  /** Replaces the [[Header]]s of the incoming Request object
-    *
-    * @param headers [[Headers]] containing the desired headers
-    * @return a new Request object
-    */
-  override def withHeaders(headers: Headers): Self = self.map(_.withHeaders(headers))
-
-  /** Add the provided headers to the existing headers, replacing those of the same header name */
-  override def putHeaders(headers: Header*): Self = self.map(_.putHeaders(headers:_*))
-
-  override def filterHeaders(f: (Header) => Boolean): Self = self.map(_.filterHeaders(f))
+  override def mapAttributes(f: (AttributeMap) => AttributeMap): Self = self.map(_.mapAttributes(f))
 }
 
 final class TaskRequestOps(val self: Task[Request]) extends AnyVal with TaskMessageOps[Request]
