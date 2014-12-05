@@ -4,6 +4,7 @@ import java.io.File
 import java.net.InetAddress
 import org.http4s.Header.{`Content-Length`, `Content-Type`}
 import org.http4s.server.ServerSoftware
+import scalaz.Id
 import scalaz.concurrent.Task
 
 /**
@@ -11,16 +12,9 @@ import scalaz.concurrent.Task
  * while most of the functionality is found in [[MessageSyntax]] and [[ResponseOps]]
  * @see [[MessageSyntax]], [[ResponseOps]]
  */
-sealed trait Message extends MessageOps {
+sealed trait Message extends MessageOps[Id.Id] {
   type Self <: Message
 
-  def httpVersion: HttpVersion
-  
-  def headers: Headers
-  
-  def body: EntityBody
-  
-  def attributes: AttributeMap
 
   protected def change(body: EntityBody = body,
                        headers: Headers = headers,
@@ -43,19 +37,6 @@ sealed trait Message extends MessageOps {
     }
   }
 
-  def contentLength: Option[Int] = headers.get(Header.`Content-Length`).map(_.length)
-
-  def contentType: Option[`Content-Type`] = headers.get(Header.`Content-Type`)
-
-  def charset: Charset = contentType.map(_.charset) getOrElse Charset.`ISO-8859-1`
-
-  def isChunked: Boolean = headers.get(Header.`Transfer-Encoding`).exists(_.values.list.contains(TransferCoding.chunked))
-
-  /**
-   * The trailer headers, as specified in Section 3.6.1 of RFC 2616.  The resulting
-   * task might not complete unless the entire body has been consumed.
-   */
-  def trailerHeaders: Task[Headers] = attributes.get(Message.Keys.TrailerHeaders).getOrElse(Task.now(Headers.empty))
 }
 
 object Message {
@@ -83,7 +64,7 @@ case class Request(
   headers: Headers = Headers.empty,
   body: EntityBody = EmptyBody,
   attributes: AttributeMap = AttributeMap.empty
-) extends Message with MessageOps {
+) extends Message with MessageOps[Id.Id] {
   import Request._
 
   type Self = Request
@@ -182,7 +163,7 @@ case class Response(
   httpVersion: HttpVersion = HttpVersion.`HTTP/1.1`,
   headers: Headers = Headers.empty,
   body: EntityBody = EmptyBody,
-  attributes: AttributeMap = AttributeMap.empty) extends Message with ResponseOps {
+  attributes: AttributeMap = AttributeMap.empty) extends Message with ResponseOps[Id.Id] {
   type Self = Response
 
   override def mapHeaders(f: (Headers) => Headers): Self = copy(headers = f(headers))

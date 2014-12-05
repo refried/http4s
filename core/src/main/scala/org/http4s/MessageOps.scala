@@ -2,10 +2,20 @@ package org.http4s
 
 import org.http4s.Header.{`Set-Cookie`, `Content-Type`}
 
+import scalaz.{~>, Functor, Id}
 import scalaz.concurrent.Task
+import scalaz.syntax.functor._
 
-trait MessageOps extends Any {
+trait MessageOps[F[_]] extends Any {
   type Self
+
+  def httpVersion: F[HttpVersion]
+
+  def headers: F[Headers]
+
+  def body: F[EntityBody]
+
+  def attributes: F[AttributeMap]
 
   def mapHeaders(f: Headers => Headers): Self
 
@@ -62,11 +72,26 @@ trait MessageOps extends Any {
     */
   final def putHeaders(headers: Header*): Self = mapHeaders(_.put(headers: _*))
 
+  /**
+   * The trailer headers, as specified in Section 3.6.1 of RFC 2616.  The resulting
+   * task might not complete unless the entire body has been consumed.
+   */
+  def trailerHeaders(implicit N: F ~> Task): Task[Headers] =
+    N(attributes).flatMap(_.get(Message.Keys.TrailerHeaders).getOrElse(Task.now(Headers.empty)))
+
   final def withTrailerHeaders(trailerHeaders: Task[Headers]): Self =
     withAttribute(Message.Keys.TrailerHeaders, trailerHeaders)
+
+  final def contentLength(implicit F: Functor[F]): F[Option[Int]] = headers.map(_.get(Header.`Content-Length`).map(_.length))
+
+  final def contentType(implicit F: Functor[F]): F[Option[`Content-Type`]] = headers.map(_.get(Header.`Content-Type`))
+
+  final def charset(implicit F: Functor[F]): F[Charset] = contentType.map(_.map(_.charset) getOrElse Charset.`ISO-8859-1`)
+
+  final def isChunked(implicit F: Functor[F]): F[Boolean] = headers.map(_.get(Header.`Transfer-Encoding`).exists(_.values.list.contains(TransferCoding.chunked)))
 }
 
-trait ResponseOps extends Any with MessageOps {
+trait ResponseOps[F[_]] extends Any with MessageOps[F] {
 
   /** Change the status of this response object
     *
