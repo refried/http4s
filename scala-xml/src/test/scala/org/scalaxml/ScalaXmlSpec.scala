@@ -47,7 +47,7 @@ class ScalaXmlSpec extends Http4sSpec {
   "htmlEncoder" should {
     "render html" in {
       val html = <html><body>Hello</body></html>
-      writeToString(html) must_== "<html><body>Hello</body></html>"
+      writeToString(Html(html)) must_== "<html><body>Hello</body></html>"
     }
   }
 }

@@ -34,30 +34,32 @@ object ExampleService {
     case req @ GET -> Root =>
       // EntityEncoder allows for easy conversion of types to a response body
       Ok(
-        <html>
-          <body>
-            <h1>Welcome to http4s.</h1>
+        Html { // this wrapper tags the content as HTML.  See also Xhtml, Xml, and Twirl support
+          <html>
+            <body>
+              <h1>Welcome to http4s.</h1>
 
-            <p>Some examples:</p>
+              <p>Some examples:</p>
 
-            <ul>
-              <li><a href="/http4s/ping">Ping route</a></li>
-              <li><a href="/http4s/future">A asynchronous result</a></li>
-              <li><a href="/http4s/streaming">A streaming result</a></li>
-              <li><a href="/http4s/ip">Get your IP address</a></li>
-              <li><a href="/http4s/redirect">A redirect url</a></li>
-              <li><a href="/http4s/content-change">A HTML result written as a String</a></li>
+              <ul>
+                <li><a href="/http4s/ping">Ping route</a></li>
+                <li><a href="/http4s/future">A asynchronous result</a></li>
+                <li><a href="/http4s/streaming">A streaming result</a></li>
+                <li><a href="/http4s/ip">Get your IP address</a></li>
+                <li><a href="/http4s/redirect">A redirect url</a></li>
+                <li><a href="/http4s/content-change">A HTML result written as a String</a></li>
 
-              <li><a href="/http4s/echo">Echo some form encoded data</a></li>
-              <li><a href="/http4s/echo2">Echo some form encoded data minus a few chars</a></li>
-              <li><a href="/http4s/sum">Calculate the sum of the submitted numbers</a></li>
-              <li><a href="/http4s/short-sum">Try to calculate a sum, but the body will be to large</a></li>
+                <li><a href="/http4s/echo">Echo some form encoded data</a></li>
+                <li><a href="/http4s/echo2">Echo some form encoded data minus a few chars</a></li>
+                <li><a href="/http4s/sum">Calculate the sum of the submitted numbers</a></li>
+                <li><a href="/http4s/short-sum">Try to calculate a sum, but the body will be to large</a></li>
 
-              <li><a href="/http4s/form-encoded">A submission form</a></li>
-              <li><a href="/http4s/push">Server push</a></li>
-            </ul>
-          </body>
-        </html>
+                <li><a href="/http4s/form-encoded">A submission form</a></li>
+                <li><a href="/http4s/push">Server push</a></li>
+              </ul>
+            </body>
+          </html>
+        }
       )
 
     case GET -> Root / "ping" => Ok("pong")
@@ -123,7 +125,7 @@ object ExampleService {
     ///////////////////////////////////////////////////////////////
     //////////////// Form encoding example ////////////////////////
     case req @ GET -> Root / "form-encoded" =>
-      val html =
+      val html = Html(
         <html><body>
           <p>Submit something.</p>
           <form name="input" method="post">
@@ -132,6 +134,7 @@ object ExampleService {
             <p><input type="submit" value="Submit"/></p>
           </form>
         </body></html>
+      )
 
       Ok(html)
 
@@ -146,7 +149,7 @@ object ExampleService {
     //////////////////////// Server Push //////////////////////////
     case req @ GET -> Root / "push" =>
       // http4s intends to be a forward looking library made with http2.0 in mind
-      val data = <html><body><img src="image.jpg"/></body></html>
+      val data = Html(<html><body><img src="image.jpg"/></body></html>)
       Ok(data).push("/image.jpg")(req)
 
     case req @ GET -> Root / "image.jpg" =>

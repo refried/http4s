@@ -6,14 +6,17 @@ import java.io.StringReader
 import Header.`Content-Type`
 import scala.util.control.NonFatal
 import scala.xml._
+import scalaz.{Tag, @@}
 import scalaz.concurrent.Task
 
 trait ElemInstances {
-  // TODO infer HTML, XHTML, etc.
-  implicit def htmlEncoder(implicit charset: Charset = Charset.`UTF-8`): EntityEncoder[Elem] =
+  def elemEncoder(mediaType: MediaType)(implicit charset: Charset = Charset.`UTF-8`): EntityEncoder[Elem] =
     EntityEncoder.stringEncoder(charset)
-      .contramap[Elem](xml => xml.buildString(false))
-      .withContentType(`Content-Type`(MediaType.`text/html`))
+      .contramap[Elem](elem => elem.buildString(false))
+      .withContentType(`Content-Type`(MediaType.`application/xml`))
+
+  implicit def taggedElemEncoder[T <: XmlMediaTypeTag](implicit charset: Charset = Charset.`UTF-8`, tag: T): EntityEncoder[Elem @@ T] =
+    elemEncoder(tag.mediaType).contramap(Tag.unwrap)
 
   /**
    * Handles a message body as XML.
